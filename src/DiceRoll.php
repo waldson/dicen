@@ -11,12 +11,14 @@ class DiceRoll implements Token
     private $modifier = 0;
     private $label    = null;
     private $lastRoll = [];
+    private $position = 0;
 
     public function __construct(
         int $count = 1,
         int $faces = 6,
         int $modifier = 0,
-        ?string $label = null
+        ?string $label = null,
+        int $position = 0
     ) {
         if ($faces == 0) {
             throw new \Exception('A dice cannot have 0 faces.');
@@ -26,6 +28,7 @@ class DiceRoll implements Token
         $this->faces = $faces;
         $this->modifier = $modifier;
         $this->label = $label;
+        $this->position = $position;
     }
 
     public function roll(RandomGenerator $generator): int
@@ -110,5 +113,10 @@ class DiceRoll implements Token
     public function getModifier(): int
     {
         return $this->modifier;
+    }
+
+    public function getPosition(): int
+    {
+        return $this->position;
     }
 }
