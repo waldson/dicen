@@ -23,6 +23,10 @@ class DiceParser implements Parser
     /**@var \SplStack*/
     private $operatorStack;
 
+
+    /**@var int*/
+    private $terminalTokenCount = 0;
+
     public function parse(string $roll): Token
     {
         if (empty($this->scanner)) {
@@ -32,6 +36,8 @@ class DiceParser implements Parser
         }
         $this->operatorStack = new \SplStack();
         $this->valueStack = new \SplStack();
+        $this->terminalTokenCount = 0;
+
         return $this->doParse();
     }
 
@@ -154,7 +160,7 @@ class DiceParser implements Parser
             return $this->parseDice($number);
         }
 
-        return new Number($number);
+        return new Number($number, $this->terminalTokenCount++);
     }
 
     private function parseDice($diceCount): Token
@@ -171,14 +177,14 @@ class DiceParser implements Parser
 
             $modifierSign = 1;
 
-            if ($sign == '+' || $sign == '-') {
+            if (($sign == '+' || $sign == '-') && !$this->scanner->matches('(')) {
                 $modifierSign = $sign == '+' ? 1 : -1;
 
                 $right = $this->parseExpression();
 
                 if (!($right instanceof Number)) {
                     $this->scanner->loadPosition();
-                    return new DiceRoll($diceCount, $diceFaces, $modifier);
+                    return new DiceRoll($diceCount, $diceFaces, $modifier, null, $this->terminalTokenCount++);
                 }
 
                 $this->scanner->popSavedPosition();
@@ -186,7 +192,7 @@ class DiceParser implements Parser
                 $modifier = $right->getValue() * $modifierSign;
             } else {
                 $this->scanner->loadPosition();
-                return new DiceRoll($diceCount, $diceFaces, $modifier);
+                return new DiceRoll($diceCount, $diceFaces, $modifier, null, $this->terminalTokenCount++);
             }
         }
 
@@ -196,7 +202,7 @@ class DiceParser implements Parser
             $label = $this->consumeLabel();
         }
 
-        return new DiceRoll($diceCount, $diceFaces, $modifier, $label);
+        return new DiceRoll($diceCount, $diceFaces, $modifier, $label, $this->terminalTokenCount++);
     }
 
     private function consumeLabel(): string

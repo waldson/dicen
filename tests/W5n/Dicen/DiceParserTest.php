@@ -65,6 +65,12 @@ class DiceParserTest extends TestCase
         $this->assertNull($roll->getLabel());
     }
 
+    public function testDiceFollowedByAParenthesisExpression()
+    {
+        $op = $this->parser->parse('2d6+(25-33)*2+3d5*4');
+        $this->assertNotNull($op);
+    }
+
     public function testMismatchParenthesisShouldThrow()
     {
         $this->expectException(\Exception::class);
