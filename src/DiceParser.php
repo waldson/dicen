@@ -169,8 +169,9 @@ class DiceParser implements Parser
 
         $diceFaces = $this->consumeNumber();
 
-        $discard = null;
-        $rerolls = [];
+        $discard     = null;
+        $rerolls     = [];
+        $isExplosive = false;
 
         while ($this->hasAnyDiceModifier()) {
             if ($this->canBeDiscard()) {
@@ -181,6 +182,12 @@ class DiceParser implements Parser
                 $discard = $this->parseDiscard($diceCount);
             } elseif ($this->isReroll()) {
                 $rerolls[] = $this->parseReroll();
+            } elseif ($this->isExplosion()) {
+                if ($isExplosive) {
+                    throw new \Exception('Syntax error: You can only explode a dice once per roll.');
+                }
+                $this->consumeExplosion();
+                $isExplosive = true;
             }
         }
 
@@ -208,7 +215,8 @@ class DiceParser implements Parser
                         null,
                         $this->terminalTokenCount++,
                         $discard,
-                        $rerolls
+                        $rerolls,
+                        $isExplosive
                     );
                 }
 
@@ -225,7 +233,8 @@ class DiceParser implements Parser
                     null,
                     $this->terminalTokenCount++,
                     null,
-                    $rerolls
+                    $rerolls,
+                    $isExplosive
                 );
             }
         }
@@ -243,7 +252,8 @@ class DiceParser implements Parser
             $label,
             $this->terminalTokenCount++,
             $discard,
-            $rerolls
+            $rerolls,
+            $isExplosive
         );
     }
 
@@ -334,12 +344,17 @@ class DiceParser implements Parser
         );
     }
 
-    private function isOperator()
+    private function consumeExplosion(): void
+    {
+        $this->scanner->consume('!');
+    }
+
+    private function isOperator(): bool
     {
         return $this->isBasicOperator() || $this->scanner->matchesAny('^', '%');
     }
 
-    private function isComparator()
+    private function isComparator(): bool
     {
         return $this->scanner->matchesAny('>=', '<=', '=', '>', '<');
     }
@@ -349,32 +364,37 @@ class DiceParser implements Parser
         return $this->scanner->consumeAny('>=', '<=', '=', '>', '<');
     }
 
-    public function isOpenParens()
+    public function isOpenParens(): bool
     {
         return $this->scanner->matches('(');
     }
 
-    public function isCloseParens()
+    public function isCloseParens(): bool
     {
         return $this->scanner->matches(')');
     }
 
-    public function canBeDiscard()
+    public function isExplosion(): bool
+    {
+        return $this->scanner->matches('!');
+    }
+
+    public function canBeDiscard(): bool
     {
         return $this->scanner->matchesAny('k', 'K', 'D', 'd');
     }
 
-    public function isReroll()
+    public function isReroll(): bool
     {
         return $this->scanner->matchesAny('r', 'R');
     }
 
-    public function hasAnyDiceModifier()
+    public function hasAnyDiceModifier(): bool
     {
-        return $this->canBeDiscard() || $this->isReroll();
+        return $this->canBeDiscard() || $this->isReroll() || $this->isExplosion();
     }
 
-    private function isD()
+    private function isD(): bool
     {
         return $this->scanner->matchesAny('d', 'D');
     }

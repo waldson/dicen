@@ -134,6 +134,12 @@ class DiceParserTest extends TestCase
         $this->assertEquals(2, $discard2->getCount());
     }
 
+    public function testDiceCanHaveOnlyOneKeepOrDropPerRoll()
+    {
+        $this->expectException(\Exception::class);
+        $op  = $this->parser->parse('2d6dl1k1');
+    }
+
     public function testDiceWithRerolls()
     {
         $op      = $this->parser->parse('2d6d1r<2r4r>=5+3');
@@ -149,6 +155,18 @@ class DiceParserTest extends TestCase
 
         $this->assertEquals('>=', $rerolls[2]->getComparator());
         $this->assertEquals(5, $rerolls[2]->getThreshold());
+    }
+
+    public function testDiceWithExplosion()
+    {
+        $op      = $this->parser->parse('2d6d1!');
+        $this->assertTrue($op->isExplosive());
+    }
+
+    public function testDiceCanHaveOnlyOneExplosionPerRoll()
+    {
+        $this->expectException(\Exception::class);
+        $op      = $this->parser->parse('2d6d1!!');
     }
 
     public function testMismatchParenthesisShouldThrow()

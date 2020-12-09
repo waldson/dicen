@@ -6,14 +6,15 @@ namespace W5n\Dicen;
 
 class DiceRoll implements Token
 {
-    private $count    = 1;
-    private $faces    = 6;
-    private $modifier = 0;
-    private $label    = null;
-    private $lastRoll = [];
-    private $position = 0;
-    private $discard  = null;
-    private $rerolls  = [];
+    private $count     = 1;
+    private $faces     = 6;
+    private $modifier  = 0;
+    private $label     = null;
+    private $lastRoll  = [];
+    private $position  = 0;
+    private $discard   = null;
+    private $rerolls   = [];
+    private $explosive = false;
 
 
     public function __construct(
@@ -23,19 +24,21 @@ class DiceRoll implements Token
         ?string $label        = null,
         int $position         = 0,
         ?DiceDiscard $discard = null,
-        array $rerolls        = []
+        array $rerolls        = [],
+        $explosive            = false
     ) {
         if ($faces == 0) {
             throw new \Exception('A dice cannot have 0 faces.');
         }
 
-        $this->count    = $count;
-        $this->faces    = $faces;
-        $this->modifier = $modifier;
-        $this->label    = $label;
-        $this->position = $position;
-        $this->discard  = $discard;
-        $this->rerolls  = $rerolls;
+        $this->count     = $count;
+        $this->faces     = $faces;
+        $this->modifier  = $modifier;
+        $this->label     = $label;
+        $this->position  = $position;
+        $this->discard   = $discard;
+        $this->rerolls   = $rerolls;
+        $this->explosive = $explosive;
     }
 
     public function roll(RandomGenerator $generator): int
@@ -135,5 +138,10 @@ class DiceRoll implements Token
     public function getRerolls(): array
     {
         return $this->rerolls;
+    }
+
+    public function isExplosive(): bool
+    {
+        return $this->explosive;
     }
 }
