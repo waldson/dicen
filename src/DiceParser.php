@@ -169,6 +169,7 @@ class DiceParser implements Parser
 
         $diceFaces = $this->consumeNumber();
 
+        $discard = $this->parseDiscard($diceCount);
         $modifier = 0;
 
         if ($this->isOperator()) {
@@ -177,14 +178,16 @@ class DiceParser implements Parser
 
             $modifierSign = 1;
 
+
+
             if (($sign == '+' || $sign == '-') && !$this->scanner->matches('(')) {
                 $modifierSign = $sign == '+' ? 1 : -1;
 
-                $right = $this->parseExpression();
+                $right   = $this->parseExpression();
 
                 if (!($right instanceof Number)) {
                     $this->scanner->loadPosition();
-                    return new DiceRoll($diceCount, $diceFaces, $modifier, null, $this->terminalTokenCount++);
+                    return new DiceRoll($diceCount, $diceFaces, $modifier, null, $this->terminalTokenCount++, $discard);
                 }
 
                 $this->scanner->popSavedPosition();
@@ -202,8 +205,46 @@ class DiceParser implements Parser
             $label = $this->consumeLabel();
         }
 
-        return new DiceRoll($diceCount, $diceFaces, $modifier, $label, $this->terminalTokenCount++);
+        return new DiceRoll($diceCount, $diceFaces, $modifier, $label, $this->terminalTokenCount++, $discard);
     }
+
+    private function parseDiscard(int $diceCount): ?DiceDiscard
+    {
+        if (!$this->scanner->matchesAny('k', 'd', 'K', 'D')) {
+            return null;
+        }
+        $isKeep         = strtolower($this->scanner->consume()) == 'k';
+        $highestOrLower = null;
+
+        if ($this->scanner->matchesAny('h', 'H', 'l', 'L')) {
+            $highestOrLower = strtolower($this->scanner->consume());
+        } else {
+            $highestOrLower = $isKeep ? 'h' : 'l';
+        }
+
+        $isHighest = $highestOrLower == 'h';
+
+        $discardType = null;
+
+        if ($isKeep) {
+            $discardType = $isHighest ? DiceDiscard::TYPE_KEEP_HIGHEST : DiceDiscard::TYPE_KEEP_LOWEST;
+        } else {
+            $discardType = $isHighest ? DiceDiscard::TYPE_DROP_HIGHEST : DiceDiscard::TYPE_DROP_LOWEST;
+        }
+
+        $count = $this->consumeNumber();
+
+        if ($count >= $diceCount) {
+            $message = $isKeep
+                ? 'You must keep at least one dice.'
+                : 'You can not drop all of your dices.';
+
+            throw new \Exception($message);
+        }
+
+        return new DiceDiscard($discardType, $count);
+    }
+
 
     private function consumeLabel(): string
     {

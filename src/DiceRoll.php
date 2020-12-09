@@ -6,29 +6,33 @@ namespace W5n\Dicen;
 
 class DiceRoll implements Token
 {
-    private $count    = 1;
-    private $faces    = 6;
-    private $modifier = 0;
-    private $label    = null;
-    private $lastRoll = [];
-    private $position = 0;
+    private $count       = 1;
+    private $faces       = 6;
+    private $modifier    = 0;
+    private $label       = null;
+    private $lastRoll    = [];
+    private $position    = 0;
+    private $discard     = null;
+
 
     public function __construct(
         int $count = 1,
         int $faces = 6,
         int $modifier = 0,
         ?string $label = null,
-        int $position = 0
+        int $position = 0,
+        ?DiceDiscard $discard = null
     ) {
         if ($faces == 0) {
             throw new \Exception('A dice cannot have 0 faces.');
         }
 
-        $this->count = $count;
-        $this->faces = $faces;
+        $this->count    = $count;
+        $this->faces    = $faces;
         $this->modifier = $modifier;
-        $this->label = $label;
+        $this->label    = $label;
         $this->position = $position;
+        $this->discard  = $discard;
     }
 
     public function roll(RandomGenerator $generator): int
@@ -118,5 +122,10 @@ class DiceRoll implements Token
     public function getPosition(): int
     {
         return $this->position;
+    }
+
+    public function getDiscard(): DiceDiscard
+    {
+        return $this->discard;
     }
 }
