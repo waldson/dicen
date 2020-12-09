@@ -119,7 +119,7 @@ class DiceParserTest extends TestCase
 
     public function testDiceWithDiscardDropLowest()
     {
-        $op  = $this->parser->parse('2d6dl1+3');
+        $op  = $this->parser->parse('2d6dl1');
         $op2 = $this->parser->parse('3d6d2');
 
         $discard  = $op->getDiscard();
@@ -132,6 +132,23 @@ class DiceParserTest extends TestCase
         $this->assertEquals(DiceDiscard::TYPE_DROP_LOWEST, $discard2->getType());
         $this->assertEquals(1, $discard->getCount());
         $this->assertEquals(2, $discard2->getCount());
+    }
+
+    public function testDiceWithRerolls()
+    {
+        $op      = $this->parser->parse('2d6d1r<2r4r>=5+3');
+        $rerolls = $op->getRerolls();
+
+        $this->assertCount(3, $rerolls);
+
+        $this->assertEquals('<', $rerolls[0]->getComparator());
+        $this->assertEquals(2, $rerolls[0]->getThreshold());
+
+        $this->assertEquals('=', $rerolls[1]->getComparator());
+        $this->assertEquals(4, $rerolls[1]->getThreshold());
+
+        $this->assertEquals('>=', $rerolls[2]->getComparator());
+        $this->assertEquals(5, $rerolls[2]->getThreshold());
     }
 
     public function testMismatchParenthesisShouldThrow()

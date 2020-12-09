@@ -169,7 +169,21 @@ class DiceParser implements Parser
 
         $diceFaces = $this->consumeNumber();
 
-        $discard = $this->parseDiscard($diceCount);
+        $discard = null;
+        $rerolls = [];
+
+        while ($this->hasAnyDiceModifier()) {
+            if ($this->canBeDiscard()) {
+                if (!empty($discard)) {
+                    throw new \Exception('Syntax error: Keep and drops can only be called once per roll.');
+                }
+
+                $discard = $this->parseDiscard($diceCount);
+            } elseif ($this->isReroll()) {
+                $rerolls[] = $this->parseReroll();
+            }
+        }
+
         $modifier = 0;
 
         if ($this->isOperator()) {
@@ -187,7 +201,15 @@ class DiceParser implements Parser
 
                 if (!($right instanceof Number)) {
                     $this->scanner->loadPosition();
-                    return new DiceRoll($diceCount, $diceFaces, $modifier, null, $this->terminalTokenCount++, $discard);
+                    return new DiceRoll(
+                        $diceCount,
+                        $diceFaces,
+                        $modifier,
+                        null,
+                        $this->terminalTokenCount++,
+                        $discard,
+                        $rerolls
+                    );
                 }
 
                 $this->scanner->popSavedPosition();
@@ -195,7 +217,16 @@ class DiceParser implements Parser
                 $modifier = $right->getValue() * $modifierSign;
             } else {
                 $this->scanner->loadPosition();
-                return new DiceRoll($diceCount, $diceFaces, $modifier, null, $this->terminalTokenCount++);
+
+                return new DiceRoll(
+                    $diceCount,
+                    $diceFaces,
+                    $modifier,
+                    null,
+                    $this->terminalTokenCount++,
+                    null,
+                    $rerolls
+                );
             }
         }
 
@@ -205,8 +236,17 @@ class DiceParser implements Parser
             $label = $this->consumeLabel();
         }
 
-        return new DiceRoll($diceCount, $diceFaces, $modifier, $label, $this->terminalTokenCount++, $discard);
+        return new DiceRoll(
+            $diceCount,
+            $diceFaces,
+            $modifier,
+            $label,
+            $this->terminalTokenCount++,
+            $discard,
+            $rerolls
+        );
     }
+
 
     private function parseDiscard(int $diceCount): ?DiceDiscard
     {
@@ -243,6 +283,20 @@ class DiceParser implements Parser
         }
 
         return new DiceDiscard($discardType, $count);
+    }
+
+    private function parseReroll(): Reroll
+    {
+        $this->scanner->consumeAny('r', 'R');
+        $comparator = '=';
+
+        if ($this->isComparator()) {
+            $comparator = $this->consumeComparator();
+        }
+
+        $threshold = $this->consumeNumber();
+
+        return new Reroll($comparator, $threshold);
     }
 
 
@@ -285,6 +339,16 @@ class DiceParser implements Parser
         return $this->isBasicOperator() || $this->scanner->matchesAny('^', '%');
     }
 
+    private function isComparator()
+    {
+        return $this->scanner->matchesAny('>=', '<=', '=', '>', '<');
+    }
+
+    private function consumeComparator(): string
+    {
+        return $this->scanner->consumeAny('>=', '<=', '=', '>', '<');
+    }
+
     public function isOpenParens()
     {
         return $this->scanner->matches('(');
@@ -295,6 +359,20 @@ class DiceParser implements Parser
         return $this->scanner->matches(')');
     }
 
+    public function canBeDiscard()
+    {
+        return $this->scanner->matchesAny('k', 'K', 'D', 'd');
+    }
+
+    public function isReroll()
+    {
+        return $this->scanner->matchesAny('r', 'R');
+    }
+
+    public function hasAnyDiceModifier()
+    {
+        return $this->canBeDiscard() || $this->isReroll();
+    }
 
     private function isD()
     {
