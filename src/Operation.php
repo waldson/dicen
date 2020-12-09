@@ -32,6 +32,11 @@ class Operation implements Token
         return $this->right;
     }
 
+    public function getPosition(): int
+    {
+        return $this->getOperator()->getPosition();
+    }
+
     public function getValue(?Context $context = null): int
     {
         $operator = $this->getOperator()->getSymbol();

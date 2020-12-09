@@ -117,19 +117,19 @@ class DiceParser implements Parser
     {
         switch ($symbol) {
             case '+':
-                return new Operator('+', 1);
+                return new Operator('+', 1, false, $this->terminalTokenCount++);
             case '-':
-                return new Operator('-', 1);
+                return new Operator('-', 1, false, $this->terminalTokenCount++);
             case '*':
             case 'x':
             case 'X':
-                return new Operator('*', 2);
+                return new Operator('*', 2, false, $this->terminalTokenCount++);
             case '/':
-                return new Operator('/', 2);
+                return new Operator('/', 2, false, $this->terminalTokenCount++);
             case '%':
-                return new Operator('%', 2);
+                return new Operator('%', 2, false, $this->terminalTokenCount++);
             case '^':
-                return new Operator('^', 3, true);
+                return new Operator('^', 3, true, $this->terminalTokenCount++);
             default:
                 throw new \Exception("Invalid operator: " . $symbol . '.');
         }
