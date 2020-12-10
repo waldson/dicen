@@ -14,7 +14,7 @@ class DiceEngineTest extends TestCase
     {
         $gen = Mockery::mock(DefaultRandomGenerator::class);
         $gen->shouldReceive('generate')
-            ->times(10)
+            ->times(5)
             ->andReturn(1);
 
         $engine = new DiceEngine(

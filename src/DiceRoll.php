@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace W5n\Dicen;
 
+use W5n\Dicen\DiceRollResultBuilder;
+
 class DiceRoll implements Token
 {
     private $count     = 1;
@@ -43,38 +45,71 @@ class DiceRoll implements Token
 
     public function roll(RandomGenerator $generator): int
     {
-        $sum = 0;
+        $resultBuilder  = new DiceRollResultBuilder();
+        $this->lastRoll = [];
 
-        if ($this->count > 0) {
-            $this->lastRoll = [
-                'count'    => $this->count,
-                'faces'    => $this->faces,
-                'label'    => null,
-                'modifier' => $this->modifier,
-                'results'  => [],
-                'total'    => 0
-            ];
-        }
-
-        if (!empty($this->label)) {
-            $this->lastRoll['label'] = $this->getLabel();
-        }
+        $diceIndex = 0;
+        $sum       = 0;
 
         for ($i = 0; $i < $this->count; ++$i) {
-            $result = $generator->generate(1, $this->faces);
+            $rollCount = 0;
+            $result = null;
 
-            $this->lastRoll['results'][] = $result;
+            while ($rollCount == 0 || (!empty($result) && $this->shouldReroll($result->getValue()))) {
+                $diceResult = $this->rollToBuilder($resultBuilder, $generator);
+                $sum += $diceResult;
 
-            $sum += $result;
+                $resultBuilder
+                    ->withReroll($rollCount > 0)
+                    ->withDiceIndex($diceIndex++);
+
+                if ($this->shouldReroll($diceResult)) {
+                    $resultBuilder->withDropped(true);
+                }
+
+                $this->lastRoll[] = $resultBuilder->build();
+
+                $rollCount++;
+            }
         }
 
-        if (!empty($this->modifier)) {
-            $sum += $this->modifier;
+        if (!empty($this->discard) && $this->discard->getType() !== DiceDiscard::TYPE_NONE) {
+            dd("OK");
         }
 
-        $this->lastRoll['total'] = $sum;
 
-        return $sum;
+
+        return $sum + $this->getModifier();
+    }
+
+    private function rollToBuilder(DiceRollResultBuilder $builder, RandomGenerator $generator): int
+    {
+        $builder->reset();
+        $builder->withFaces($this->faces);
+
+        if (!empty($this->label)) {
+            $builder->withLabel($this->label);
+        }
+
+        $result = $generator->generate(1, $this->faces);
+
+        $builder->withValue($result);
+
+        $builder->withFailure($result == 1);
+        $builder->withCritical($result == $this->faces);
+
+        return $result;
+    }
+
+    private function shouldReroll(int $diceResult): bool
+    {
+        foreach ($this->getRerolls() as $reroll) {
+            if ($reroll->shouldReroll($result)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function getValue(?Context $context = null): int

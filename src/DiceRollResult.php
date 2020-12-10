@@ -2,27 +2,37 @@
 
 declare(strict_types=1);
 
-namespace W5n\Dice;
+namespace W5n\Dicen;
 
 class DiceRollResult
 {
     private $label;
     private $faces;
     private $value;
-    private $dropped  = false;
-    private $reroll   = false;
-    private $critical = false;
-    private $failure  = false;
+    private $dropped   = false;
+    private $reroll    = false;
+    private $critical  = false;
+    private $failure   = false;
+    private $diceIndex = 0;
 
-    public function __construct($label, $faces, $value, $dropped, $reroll, $critical, $failure)
-    {
-        $this->label    = $label;
-        $this->faces    = $faces;
-        $this->value    = $value;
-        $this->dropped  = $dropped;
-        $this->reroll   = $reroll;
-        $this->critical = $critical;
-        $this->failure  = $failure;
+    public function __construct(
+        $label,
+        $faces,
+        $value,
+        $dropped,
+        $reroll,
+        $critical,
+        $failure,
+        $diceIndex
+    ) {
+        $this->label     = $label;
+        $this->faces     = $faces;
+        $this->value     = $value;
+        $this->dropped   = $dropped;
+        $this->reroll    = $reroll;
+        $this->critical  = $critical;
+        $this->failure   = $failure;
+        $this->diceIndex = $diceIndex;
     }
 
     public function getLabel(): string
@@ -40,7 +50,7 @@ class DiceRollResult
         return $this->value;
     }
 
-    public function getDropped(): bool
+    public function isDropped(): bool
     {
         return $this->dropped;
     }
@@ -58,5 +68,10 @@ class DiceRollResult
     public function isFailure(): bool
     {
         return $this->failure;
+    }
+
+    public function getDiceIndex(): int
+    {
+        return $this->diceIndex;
     }
 }
