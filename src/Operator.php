@@ -9,17 +9,24 @@ class Operator extends BaseOperator
     private $symbol;
     private $precedence;
     private $rightAssociative;
+    private $position;
 
-    public function __construct($symbol, $precedence, $rightAssociative = false)
+    public function __construct($symbol, $precedence, $rightAssociative = false, $position = 0)
     {
-        $this->symbol     = $symbol;
-        $this->precedence = $precedence;
+        $this->symbol           = $symbol;
+        $this->precedence       = $precedence;
         $this->rightAssociative = $rightAssociative;
+        $this->position         = $position;
     }
 
     public function getPrecedence(): int
     {
         return $this->precedence;
+    }
+
+    public function getPosition(): int
+    {
+        return $this->position;
     }
 
     public function getSymbol(): string
@@ -46,5 +53,10 @@ class Operator extends BaseOperator
     public function getValue(?Context $context = null): int
     {
         return 0;
+    }
+
+    public function __toString(): string
+    {
+        return $this->getSymbol();
     }
 }

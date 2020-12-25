@@ -5,6 +5,7 @@ namespace Tests\W5n\Samples;
 use PHPUnit\Framework\TestCase;
 use W5n\Dicen\DiceParser;
 use W5n\Dicen\Number;
+use W5n\Dicen\DiceDiscard;
 use W5n\Dicen\Operation;
 use W5n\Dicen\DiceRoll;
 
@@ -73,6 +74,99 @@ class DiceParserTest extends TestCase
         } catch (\Exception $ex) {
             $this->fail('A parenthesis expression can appears after a dice roll.');
         }
+    }
+
+    public function testDiceWithDiscardKeepLowest()
+    {
+        $op = $this->parser->parse('2d6kl1');
+
+        $discard = $op->getDiscard();
+
+        $this->assertNotNull($discard);
+
+        $this->assertEquals(DiceDiscard::TYPE_KEEP_LOWEST, $discard->getType());
+        $this->assertEquals(1, $discard->getCount());
+    }
+
+    public function testDiceWithDiscardKeepHighest()
+    {
+        $op  = $this->parser->parse('2d6kh1+3');
+        $op2 = $this->parser->parse('3d6k2');
+
+        $discard  = $op->getDiscard();
+        $discard2 = $op2->getDiscard();
+
+        $this->assertNotNull($discard);
+        $this->assertNotNull($discard2);
+
+        $this->assertEquals(DiceDiscard::TYPE_KEEP_HIGHEST, $discard->getType());
+        $this->assertEquals(DiceDiscard::TYPE_KEEP_HIGHEST, $discard2->getType());
+        $this->assertEquals(1, $discard->getCount());
+        $this->assertEquals(2, $discard2->getCount());
+    }
+
+    public function testDiceWithDiscardDropHighest()
+    {
+        $op = $this->parser->parse('2d6dh1');
+
+        $discard = $op->getDiscard();
+
+        $this->assertNotNull($discard);
+
+        $this->assertEquals(DiceDiscard::TYPE_DROP_HIGHEST, $discard->getType());
+        $this->assertEquals(1, $discard->getCount());
+    }
+
+    public function testDiceWithDiscardDropLowest()
+    {
+        $op  = $this->parser->parse('2d6dl1');
+        $op2 = $this->parser->parse('3d6d2');
+
+        $discard  = $op->getDiscard();
+        $discard2 = $op2->getDiscard();
+
+        $this->assertNotNull($discard);
+        $this->assertNotNull($discard2);
+
+        $this->assertEquals(DiceDiscard::TYPE_DROP_LOWEST, $discard->getType());
+        $this->assertEquals(DiceDiscard::TYPE_DROP_LOWEST, $discard2->getType());
+        $this->assertEquals(1, $discard->getCount());
+        $this->assertEquals(2, $discard2->getCount());
+    }
+
+    public function testDiceCanHaveOnlyOneKeepOrDropPerRoll()
+    {
+        $this->expectException(\Exception::class);
+        $op  = $this->parser->parse('2d6dl1k1');
+    }
+
+    public function testDiceWithRerolls()
+    {
+        $op      = $this->parser->parse('2d6d1r<2r4r>=5+3');
+        $rerolls = $op->getRerolls();
+
+        $this->assertCount(3, $rerolls);
+
+        $this->assertEquals('<', $rerolls[0]->getComparator());
+        $this->assertEquals(2, $rerolls[0]->getThreshold());
+
+        $this->assertEquals('=', $rerolls[1]->getComparator());
+        $this->assertEquals(4, $rerolls[1]->getThreshold());
+
+        $this->assertEquals('>=', $rerolls[2]->getComparator());
+        $this->assertEquals(5, $rerolls[2]->getThreshold());
+    }
+
+    public function testDiceWithExplosion()
+    {
+        $op      = $this->parser->parse('2d6d1!');
+        $this->assertTrue($op->isExplosive());
+    }
+
+    public function testDiceCanHaveOnlyOneExplosionPerRoll()
+    {
+        $this->expectException(\Exception::class);
+        $op      = $this->parser->parse('2d6d1!!');
     }
 
     public function testMismatchParenthesisShouldThrow()
